@@ -1,0 +1,17 @@
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+}
+
+.label {
+    color: #fff;
+    font-family: sans-serif;
+    padding: 2px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 4px;
+    font-size: 12px;
+} 
