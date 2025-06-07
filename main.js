@@ -53,6 +53,7 @@ function createPlanet(size, texture, position, name, orbitSpeed) {
     const geometry = new THREE.SphereGeometry(size, 32, 32);
     const material = new THREE.MeshStandardMaterial({ map: textureLoader.load(texture) });
     const planet = new THREE.Mesh(geometry, material);
+    planet.userData.name = name;
     
     const pivot = new THREE.Object3D();
     scene.add(pivot);
@@ -99,11 +100,84 @@ const uranus = createPlanet(2.5, 'textures/uranus.jpg', 65, 'Uranus', 0.0004);
 const neptune = createPlanet(2.4, 'textures/neptune.jpg', 75, 'Neptune', 0.0001);
 const pluto = createPlanet(0.8, 'textures/pluto.jpg', 85, 'Pluto', 0.00005);
 
-camera.position.set(0, 31, 116);
+const initialCameraPosition = new THREE.Vector3(0, 31, 116);
+camera.position.copy(initialCameraPosition);
+
+const planetData = {
+    Mercury: { description: "The smallest planet in our solar system and nearest to the Sun, Mercury is only slightly larger than Earth's Moon." },
+    Venus: { description: "Venus spins slowly in the opposite direction from most planets. A thick atmosphere traps heat in a runaway greenhouse effect, making it the hottest planet in our solar system." },
+    Earth: { description: "Our home planet is the only place we know of so far that's inhabited by living things. It's also the only planet in our solar system with liquid water on the surface." },
+    Mars: { description: "Mars is a dusty, cold, desert world with a very thin atmosphere. There is strong evidence Mars was—billions of years ago—wetter and warmer, with a thicker atmosphere." },
+    Jupiter: { description: "Jupiter is more than twice as massive than the other planets of our solar system combined. The giant planet's Great Red Spot is a centuries-old storm bigger than Earth." },
+    Saturn: { description: "Adorned with a dazzling, complex system of icy rings, Saturn is unique in our solar system. The other giant planets have rings, but none are as spectacular as Saturn's." },
+    Uranus: { description: "Uranus—seventh planet from the Sun—rotates at a nearly 90-degree angle from the plane of its orbit. This unique tilt makes Uranus appear to spin on its side." },
+    Neptune: { description: "Neptune—the eighth and most distant major planet orbiting our Sun—is dark, cold, and whipped by supersonic winds. It was the first planet located through mathematical calculation." },
+    Pluto: { description: "Pluto is a dwarf planet in the Kuiper Belt, a donut-shaped region of icy bodies beyond the orbit of Neptune. Pluto was the first Kuiper Belt object to be discovered." }
+};
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let selectedPlanet = null;
+
+function onMouseClick(event) {
+    // If the click is on the info panel itself, do nothing
+    if (event.target.closest('#info-panel')) {
+        return;
+    }
+
+    // If we are zoomed in on a planet, any click outside the panel should zoom out
+    if (selectedPlanet) {
+        closeInfoPanel();
+        return;
+    }
+    
+    // If we are zoomed out, check for a planet to click on
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) {
+        const object = intersects[0].object;
+        if (object.userData.name) {
+            selectedPlanet = object;
+            focusOnPlanet(object);
+        }
+    }
+}
+
+function focusOnPlanet(planet) {
+    const planetName = planet.userData.name;
+    const info = planetData[planetName];
+    document.getElementById('planet-name').innerText = planetName;
+    document.getElementById('planet-description').innerText = info.description;
+    document.getElementById('info-panel').classList.remove('hidden');
+    controls.enabled = false;
+}
+
+function closeInfoPanel() {
+    document.getElementById('info-panel').classList.add('hidden');
+    selectedPlanet = null;
+    controls.enabled = true;
+}
+
+window.addEventListener('click', onMouseClick);
+document.getElementById('close-button').addEventListener('click', closeInfoPanel);
 
 // Implement a basic animation loop
 function animate() {
     requestAnimationFrame(animate);
+
+    if (selectedPlanet) {
+        const targetPosition = new THREE.Vector3();
+        selectedPlanet.getWorldPosition(targetPosition);
+        const targetFocus = new THREE.Vector3().copy(targetPosition);
+        camera.position.lerp(targetPosition.add(new THREE.Vector3(0, 1, selectedPlanet.geometry.parameters.radius + 5)), 0.05);
+        controls.target.lerp(targetFocus, 0.05);
+    } else {
+        camera.position.lerp(initialCameraPosition, 0.05);
+        controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.05);
+    }
 
     // Add rotation to the Sun and planets
     sun.rotation.y += 0.001;
