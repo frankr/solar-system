@@ -120,13 +120,12 @@ const mouse = new THREE.Vector2();
 let selectedPlanet = null;
 
 function onMouseClick(event) {
-    // If the click is on the info panel itself, do nothing
-    if (event.target.closest('#info-panel')) {
-        return;
-    }
-
-    // If we are zoomed in on a planet, any click outside the panel should zoom out
+    // If we are zoomed in on a planet, any click should zoom out (except on the info panel)
     if (selectedPlanet) {
+        // Only prevent zoom out if clicking directly on the info panel content
+        if (event.target.closest('#info-panel') && !event.target.closest('#close-button')) {
+            return;
+        }
         closeInfoPanel();
         return;
     }
@@ -159,6 +158,18 @@ function closeInfoPanel() {
     document.getElementById('info-panel').classList.add('hidden');
     selectedPlanet = null;
     controls.enabled = true;
+    
+    // Animate camera back to initial position
+    const animateBack = () => {
+        camera.position.lerp(initialCameraPosition, 0.05);
+        controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.05);
+        
+        // Continue animation until we're close enough to initial position
+        if (camera.position.distanceTo(initialCameraPosition) > 0.1) {
+            requestAnimationFrame(animateBack);
+        }
+    };
+    animateBack();
 }
 
 window.addEventListener('click', onMouseClick);
@@ -174,10 +185,8 @@ function animate() {
         const targetFocus = new THREE.Vector3().copy(targetPosition);
         camera.position.lerp(targetPosition.add(new THREE.Vector3(0, 1, selectedPlanet.geometry.parameters.radius + 5)), 0.05);
         controls.target.lerp(targetFocus, 0.05);
-    } else {
-        camera.position.lerp(initialCameraPosition, 0.05);
-        controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.05);
     }
+    // Removed the else block that was resetting camera position
 
     // Add rotation to the Sun and planets
     sun.rotation.y += 0.001;
