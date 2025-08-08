@@ -31,7 +31,16 @@ const sunTexture = textureLoader.load('textures/sun.jpg');
 const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
 const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+sun.userData.name = 'Sun';
 scene.add(sun);
+
+// Add label to the sun
+const sunText = document.createElement('div');
+sunText.className = 'label';
+sunText.textContent = 'Sun';
+const sunLabel = new CSS2DObject(sunText);
+sunLabel.position.set(0, 7.5, 0);
+sun.add(sunLabel);
 
 const starVertices = [];
 for (let i = 0; i < 15000; i++) {
@@ -104,6 +113,7 @@ const initialCameraPosition = new THREE.Vector3(0, 31, 116);
 camera.position.copy(initialCameraPosition);
 
 const planetData = {
+    Sun: { description: "The Sun is a massive ball of hydrogen and helium that provides light and heat to our solar system. It's so large that about 1.3 million Earths could fit inside it, and it contains 99.86% of the solar system's mass." },
     Mercury: { description: "The smallest planet in our solar system and nearest to the Sun, Mercury is only slightly larger than Earth's Moon." },
     Venus: { description: "Venus spins slowly in the opposite direction from most planets. A thick atmosphere traps heat in a runaway greenhouse effect, making it the hottest planet in our solar system." },
     Earth: { description: "Our home planet is the only place we know of so far that's inhabited by living things. It's also the only planet in our solar system with liquid water on the surface." },
@@ -183,7 +193,11 @@ function animate() {
         const targetPosition = new THREE.Vector3();
         selectedPlanet.getWorldPosition(targetPosition);
         const targetFocus = new THREE.Vector3().copy(targetPosition);
-        camera.position.lerp(targetPosition.add(new THREE.Vector3(0, 1, selectedPlanet.geometry.parameters.radius + 5)), 0.05);
+        
+        // Get the radius from the geometry parameters
+        const radius = selectedPlanet.geometry.parameters.radius || 5;
+        
+        camera.position.lerp(targetPosition.add(new THREE.Vector3(0, 1, radius + 5)), 0.05);
         controls.target.lerp(targetFocus, 0.05);
     }
     // Removed the else block that was resetting camera position
